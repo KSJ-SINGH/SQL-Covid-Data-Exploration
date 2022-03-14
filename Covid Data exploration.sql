@@ -94,35 +94,4 @@ ORDER BY HighestInfectionCount desc;
  ORDER BY d.date asc;
 
 
--- Total Population vs Vaccinations
--- Shows Percentage of Population that has recieved at least one Covid Vaccine
 
-
-Select d.continent, d.location, d.date, d.population, v.new_vaccinations
-, SUM(CONVERT(int,v.new_vaccinations)) OVER (Partition by d.Location Order by d.location, d.Date) as RollingPeopleVaccinated
---, (RollingPeopleVaccinated/population)*100
-From deaths as d
-Join vaccinations as v
-	On d.location = v.location
-	and d.date = v.date
-where d.continent is not null 
-order by 2,3
-
-
--- Using CTE to perform Calculation on Partition By in previous query
-
-With PopvsVac (Continent, Location, Date, Population, New_Vaccinations, RollingPeopleVaccinated)
-as
-(
-Select d.continent, d.location, d.date, d.population, v.new_vaccinations
-, SUM(CONVERT(int,v.new_vaccinations)) OVER (Partition by d.Location Order by d.location, d.Date) as RollingPeopleVaccinated
---, (RollingPeopleVaccinated/population)*100
-From deaths as d
-Join vaccinations as v
-	On d.location = v.location
-	and d.date = v.date
-where d.continent is not null 
---order by 2,3
-)
-Select *, (RollingPeopleVaccinated/Population)*100
-From PopvsVac
