@@ -1,6 +1,6 @@
 /*
 Covid 19 Data Exploration 
-Skills used: JOINs, CTE's, Temp Tables, Windows Functions, Aggregate Functions, Creating Views, Converting Data Types
+Skills used: JOINs, CTE's, Temp Tables, Windows Functions, Aggregate Functions, Converting Data Types
 */
 
 /* InitialISing the data*/
@@ -78,20 +78,67 @@ ORDER BY HighestInfectionCount desc;
 -- Total Population vs Vaccinations
 -- Shows Percentage of Population that has recieved at least one Covid Vaccine in India
  
- SELECT d.location, d.date,d.population,  v.new_vaccinations,  ROUND((v.new_vaccinations/d.population)*100,2) as VaccinationPercentage
- FROM deaths d
- JOIN vaccinations v on d.date = v.date and d.location = v.location
- WHERE d.continent IS NOT NULL and v.new_vaccinations IS NOT NULL and d.location = 'india'
- ORDER BY d.date asc;
+SELECT d.location, d.date,d.population,  v.new_vaccinations,  ROUND((v.new_vaccinations/d.population)*100,2) as VaccinationPercentage
+FROM deaths d
+JOIN vaccinations v on d.date = v.date and d.location = v.location
+WHERE d.continent IS NOT NULL and v.new_vaccinations IS NOT NULL and d.location = 'india'
+ORDER BY d.date asc;
 
- --Total Population vs fully vaccinated
- --Shows Percentage of Population that have been fully vacinnatied in India
+--Total Population vs fully vaccinated
+--Shows Percentage of Population that have been fully vacinnatied in India
 
- SELECT d.location, d.date, d.population, v.people_fully_vaccinated,ROUND((v.people_fully_vaccinated/population)*100,2) as FullyVaccinatedPercentage
- FROM deaths d
- JOIN vaccinations v on d.date = v.date and d.location = v.location
- WHERE d.continent IS NOT NULL and v.people_fully_vaccinated IS NOT NULL and d.location = 'india'
- ORDER BY d.date asc;
+SELECT d.location, d.date, d.population, v.people_fully_vaccinated,ROUND((v.people_fully_vaccinated/population)*100,2) as FullyVaccinatedPercentage
+FROM deaths d
+JOIN vaccinations v on d.date = v.date and d.location = v.location
+WHERE d.continent IS NOT NULL and v.people_fully_vaccinated IS NOT NULL and d.location = 'india'
+ORDER BY d.date asc;
 
 
+-- Using CTE to perform Calculation on Partition By in previous query
+
+With Popvsv (Continent, Location, Date, Population, New_vcinations, RollingPeoplevcinated)
+as
+(
+Select d.continent, d.location, d.date, d.population, v.new_vaccinations
+, SUM(CONVERT(int,v.new_vaccinations)) OVER (Partition by d.Location Order by d.location, d.Date) as RollingPeoplevcinated
+--, (RollingPeoplevcinated/population)*100
+From deaths d
+Join vaccinations v
+	On d.location = v.location
+	and d.date = v.date
+where d.continent is not null 
+--order by 2,3
+)
+Select *, (RollingPeoplevcinated/Population)*100
+From Popvsv
+
+
+
+-- Using Temp Table to perform Calculation on Partition By in previous query
+
+
+DROP Table if exists #PercentPopulationvcinated
+Create Table #PercentPopulationvcinated
+(
+Continent nvarchar(255),
+Location nvarchar(255),
+Date datetime,
+Population numeric,
+New_vaccinations numeric,
+RollingPeoplevaccinated numeric
+)
+
+Insert into #PercentPopulationvcinated
+Select d.continent, d.location, d.date, d.population, v.new_vaccinations
+, SUM(CONVERT(int,v.new_vaccinations)) OVER (Partition by d.Location Order by d.location, d.Date) as RollingPeoplevcinated
+--, (RollingPeoplevaccinated/population)*100
+From deaths d
+Join vaccinations v
+	On d.location = v.location
+	and d.date = v.date
+--where d.continent is not null 
+--order by 2,3
+
+Select *, (RollingPeoplevaccinated/Population)*100
+From #PercentPopulationvcinated
 
